@@ -280,22 +280,43 @@ end
 
 
 ------------------菜单------------------
-CreateConVar('cl_v3dm_enable', '1', { FCVAR_REPLICATED, FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE })
-
-
-
-local v3dm_TEXT = {
-	title = {'Visual3DMask', '视觉3D遮罩'},
-	name = {'BaseConfig', '基础配置'},
-	default = {'default', '默认'},
-}
+CreateConVar('cl_v3dm_enable', '1', { FCVAR_ARCHIVE })
 
 local default_option =	{
 	cl_v3dm_enable = 1
 }
 
+if CLIENT then
+    local v3dm_menu_language_text = {
+		['menu.v3dm.category'] = {'Visual 3D Masks', '视觉3D遮罩'},
+		['menu.v3dm.name'] = {'Base Config', '基础配置'},
+		['menu.v3dm.enable'] = {'Enable', '启用'},
+	}
+
+	for placeholder, text in pairs(v3dm_menu_language_text) do
+		language.Add(placeholder, text[1])
+		language.Add(placeholder..'.zh', text[2])
+		v3dm_menu_language_text[placeholder] = 0
+	end
+
+	local function v3dm_menu_language()
+		function languageAdd(placeholder, zh)
+			language.Add(placeholder, language.GetPhrase(placeholder..(zh and '.zh' or '')))
+		end
+
+		local zh = GetConVar('gmod_language'):GetString() == 'zh-CN'
+
+		for placeholder, _ in pairs(v3dm_menu_language_text) do languageAdd(placeholder, zh) end
+	end
+
+	v3dm_menu_language()
+
+	// cvars.AddChangeCallback('gmod_language', function(name, old, new) v3dm_menu_language() end)
+end
+
+
 hook.Add('PopulateToolMenu', v3dm_hookName, function()//添加菜单
-	spawnmenu.AddToolMenuOption('Utilities','#v3dm.menu.category', v3dm_hookName,'#v3dm.menu.name', '', '', function(panel)
+	spawnmenu.AddToolMenuOption('Utilities','#menu.v3dm.category', v3dm_hookName,'#menu.v3dm.name', '', '', function(panel)
 		panel:Clear()
 
 		local ctrl = vgui.Create('ControlPresets', panel)
@@ -303,10 +324,9 @@ hook.Add('PopulateToolMenu', v3dm_hookName, function()//添加菜单
 		ctrl:AddOption('#preset.default',default_option)
 		for k, v in pairs(default_option) do ctrl:AddConVar(k) end
 
-		panel:Help('#addons.menu.default')
 		panel:AddPanel(ctrl)	
 
-		panel:CheckBox()
+		panel:CheckBox('#menu.v3dm.enable', 'cl_v3dm_enable')
 	end)
 end)
 
